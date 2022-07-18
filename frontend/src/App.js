@@ -17,37 +17,39 @@ function App() {
 
   function loadRazorpay() {
     const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'; //dynamic loading of sdk razorpay checkout
     script.onerror = () => {
       alert('Razorpay SDK failed to load. Are you online?');
     };
     script.onload = async () => {
       try {
         setLoading(true);
-        const result = await axios.post('/create-order', {
-          amount: orderAmount + '00',
+        const result = await axios.post('http://localhost:8082/v1/orders',  {
+          amount: orderAmount,
         });
-        const { amount, id: order_id, currency } = result.data;
-        const {
-          data: { key: razorpayKey },
-        } = await axios.get('/get-razorpay-key');
+
+        const { amount, providerOrderId, currency } = result.data;
+        const razorpayKey = await axios.get('http://localhost:8082/v1/orders/get-razorpay-key');
+
+
+        console.log(result.data)
 
         const options = {
-          key: razorpayKey,
+          key: razorpayKey.data,
           amount: amount.toString(),
           currency: currency,
           name: 'example name',
           description: 'example transaction',
-          order_id: order_id,
+          order_id: providerOrderId,
           handler: async function (response) {
-            const result = await axios.post('/pay-order', {
+            const result = await axios.post('http://localhost:8082/v1/orders/pay-order', {
               amount: amount,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id,
               razorpaySignature: response.razorpay_signature,
             });
             alert(result.data.msg);
-            fetchOrders();
+            //fetchOrders();
           },
           prefill: {
             name: 'example name',
