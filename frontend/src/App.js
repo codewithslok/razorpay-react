@@ -24,37 +24,37 @@ function App() {
     script.onload = async () => {
       try {
         setLoading(true);
-        const result = await axios.post('http://localhost:8082/v1/orders',  {
+        const result = await axios.post('http://localhost:8083/v1/orders',  {
           amount: orderAmount,
         });
 
         const { amount, providerOrderId, currency } = result.data;
-        const razorpayKey = await axios.get('http://localhost:8082/v1/orders/get-razorpay-key');
-
-
+        const razorpayKey = await axios.get('http://localhost:8083/v1/payments/config/razorpay');
         console.log(result.data)
+        console.log(razorpayKey)
 
         const options = {
-          key: razorpayKey.data,
+          key: razorpayKey.data.key,
           amount: amount.toString(),
           currency: currency,
           name: 'example name',
           description: 'example transaction',
           order_id: providerOrderId,
           handler: async function (response) {
-            const result = await axios.post('http://localhost:8082/v1/orders/pay-order', {
+            const result = await axios.post('http://localhost:8083/v1/app-callbacks/razorpay/notify-order', {
               amount: amount,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id,
               razorpaySignature: response.razorpay_signature,
             });
             alert(result.data.msg);
+            console.log(response)
             //fetchOrders();
           },
           prefill: {
             name: 'example name',
             email: 'email@example.com',
-            contact: '111111',
+            contact: '11111199999',
           },
           notes: {
             address: 'example address',
