@@ -24,29 +24,33 @@ function App() {
     script.onload = async () => {
       try {
         setLoading(true);
-        const result = await axios.post('http://localhost:8083/v1/orders',  {
-          amount: orderAmount,
-        });
+        const orderPaymentConfig = {
+          headers:{
+            "X-SESSION-ID": "dc958d3d2dd042028cfff4080969e96d"
+          }
+        };
+        const result = await axios.get('http://api.dev.myhubble.money/v1/orders/01GDAWFH5GJSXGS6RQ4XN9QF4A', orderPaymentConfig);
 
         const { amount, providerOrderId, currency } = result.data;
-        const razorpayKey = await axios.get('http://localhost:8083/v1/payments/config/razorpay');
+        const paymentConfig = await axios.get('http://api.dev.myhubble.money/v1/payments/config/', orderPaymentConfig);
         console.log(result.data)
-        console.log(razorpayKey)
+        console.log(paymentConfig)
 
         const options = {
-          key: razorpayKey.data.key,
+          key: paymentConfig.data.razorpayConfig.clientKey,
           amount: amount.toString(),
           currency: currency,
           name: 'example name',
           description: 'example transaction',
           order_id: providerOrderId,
           handler: async function (response) {
-            const result = await axios.post('http://localhost:8083/v1/app-callbacks/razorpay/notify-order', {
+            const result = await axios.post('http://api.dev.myhubble.money/v1/app-callbacks/razorpay/notify-order', {
               amount: amount,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id,
               razorpaySignature: response.razorpay_signature,
-            });
+            }, 
+            orderPaymentConfig);
             alert(result.data.msg);
             console.log(response)
             //fetchOrders();
@@ -65,6 +69,7 @@ function App() {
         };
 
         setLoading(false);
+        
         const paymentObject = new window.Razorpay(options);
         paymentObject.open();
       } catch (err) {
